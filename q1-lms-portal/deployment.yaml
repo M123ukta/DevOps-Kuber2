@@ -4,43 +4,59 @@ metadata:
   name: lms-portal
   labels:
     app: lms-portal
+
 spec:
   replicas: 2
-  revisionHistoryLimit: 5          # keep old ReplicaSets so "rollout undo" works
-  progressDeadlineSeconds: 60      # rollout is marked failed if not ready in 60s
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 90
   minReadySeconds: 3
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
-      maxUnavailable: 0            # old pods keep serving until new ones are Ready
+      maxUnavailable: 0
+
   selector:
     matchLabels:
       app: lms-portal
+
   template:
     metadata:
       labels:
         app: lms-portal
+
     spec:
       containers:
         - name: lms-portal
           image: muktamotwani/lms-portal:v1
           imagePullPolicy: Always
+
           ports:
             - containerPort: 80
-          readinessProbe:          # health check used to detect a faulty release
+              name: http
+
+          # Detects a faulty release when health.html is missing.
+          readinessProbe:
             httpGet:
               path: /health.html
-              port: 80
+              port: http
             initialDelaySeconds: 3
-            periodSeconds: 3
-            failureThreshold: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+            successThreshold: 1
+
+          # Restarts the container if Nginx itself stops responding.
           livenessProbe:
             httpGet:
               path: /index.html
-              port: 80
+              port: http
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
           resources:
             requests:
               cpu: 50m

@@ -1,14 +1,3 @@
-// ---------------------------------------------------------------------------
-// Q1 - University LMS Portal : GitHub -> Jenkins -> Docker -> Docker Hub -> Kubernetes
-// Versioned releases (v<BUILD_NUMBER>), health checks and automatic rollback.
-// Works on Jenkins running on Linux (sh) or Windows (bat).
-// Jenkins credentials required:
-//   dockerhub-creds  : Username with password   (Docker Hub)
-//   kubeconfig-creds : Secret file              (kubeconfig of Docker Desktop)
-// ---------------------------------------------------------------------------
-
-def runCmd(String c)   { if (isUnix()) { sh c } else { bat "@echo off\n${c}" } }
-def v(String name)  { return isUnix() ? "\$${name}" : "%${name}%" }   // shell variable syntax
 
 pipeline {
     agent any
@@ -19,66 +8,169 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
-    // Every commit pushed to GitHub is picked up within ~2 minutes.
-    // (Optional: use a GitHub webhook instead for instant triggering.)
-    triggers { pollSCM('H/2 * * * *') }
+    triggers {
+        pollSCM('H/2 * * * *')
+    }
 
     parameters {
-        booleanParam(name: 'FAULTY_RELEASE', defaultValue: false,
-                     description: 'Tick to deploy a deliberately faulty release and watch the automatic rollback')
+        booleanParam(
+            name: 'FAULTY_RELEASE',
+            defaultValue: false,
+            description: 'Deploy a faulty release to test automatic rollback'
+        )
     }
 
     environment {
-        GIT_URL        = 'https://github.com/M123ukta/DevOps-Kuber2'
+        GIT_URL        = 'https://github.com/M123ukta/DevOps-Kuber2.git'
         DOCKERHUB_USER = 'muktamotwani'
         APP_DIR        = 'q1-lms-portal'
         APP_NAME       = 'lms-portal'
-        IMAGE_REPO     = "${DOCKERHUB_USER}/lms-portal"
+        IMAGE_REPO     = 'muktamotwani/lms-portal'
         VERSION        = "v${BUILD_NUMBER}"
-        DH_CREDS       = credentials('docker')      // DH_CREDS_USR / DH_CREDS_PSW
-        KUBECONFIG     = credentials('kubeconfig')     // path to kubeconfig file
     }
 
     stages {
         stage('Clone Code') {
             steps {
-                git branch: 'main', url: "${GIT_URL}"
+                echo 'Checking out source code from GitHub'
+                checkout scm
+            }
+        }
+
+        stage('Verify Tools') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'docker --version'
+                        sh 'kubectl version --client'
+                    } else {
+                        bat 'docker --version'
+                        bat 'kubectl version --client'
+                    }
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {
-                    runCmd("docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} -t ${IMAGE_REPO}:latest .")
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                docker build \
+                                  --build-arg APP_VERSION=${VERSION} \
+                                  --build-arg FAULTY=${params.FAULTY_RELEASE} \
+                                  -t ${IMAGE_REPO}:${VERSION} \
+                                  -t ${IMAGE_REPO}:latest .
+                            """
+                        } else {
+                            bat """
+                                docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} -t ${IMAGE_REPO}:latest .
+                            """
+                        }
+                    }
                 }
             }
         }
 
         stage('Test Image') {
             steps {
-                // Validates the nginx config and that the site files exist inside the image.
-                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t")
-                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html")
+                script {
+                    if (isUnix()) {
+                        sh "docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t"
+                        sh "docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html"
+                    } else {
+                        bat "docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t"
+                        bat "docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html"
+                    }
+                }
             }
         }
 
         stage('Push Image to Docker Hub') {
             steps {
-                runCmd("echo ${v('DH_CREDS_PSW')}| docker login -u ${v('DH_CREDS_USR')} --password-stdin")
-                runCmd("docker push ${IMAGE_REPO}:${VERSION}")
-                runCmd("docker push ${IMAGE_REPO}:latest")
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'docker',
+                        usernameVariable: 'DH_USER',
+                        passwordVariable: 'DH_TOKEN'
+                    )
+                ]) {
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                set +x
+                                echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin
+                                docker push "$IMAGE_REPO:$VERSION"
+                                docker push "$IMAGE_REPO:latest"
+                            '''
+                        } else {
+                            bat '''
+                                @echo off
+                                echo %DH_TOKEN%| docker login -u %DH_USER% --password-stdin
+                                if errorlevel 1 exit /b 1
+                                docker push %IMAGE_REPO%:%VERSION%
+                                if errorlevel 1 exit /b 1
+                                docker push %IMAGE_REPO%:latest
+                                if errorlevel 1 exit /b 1
+                            '''
+                        }
+                    }
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                dir("${APP_DIR}") {
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig',
+                        variable: 'KCFG'
+                    )
+                ]) {
                     script {
-                        // Put the new versioned image into the manifest, then apply.
-                        def manifest = readFile('deployment.yaml').replaceAll(/image:\s*\S+/, "image: ${IMAGE_REPO}:${VERSION}")
-                        writeFile file: 'deployment.rendered.yaml', text: manifest
-                        runCmd('kubectl apply -f service.yaml')
-                        runCmd('kubectl apply -f deployment.rendered.yaml')
+                        if (isUnix()) {
+                            sh '''
+                                export KUBECONFIG="$KCFG"
+                                kubectl apply -f "$APP_DIR/service.yaml"
+                            '''
+                        } else {
+                            bat '''
+                                @echo off
+                                set "KUBECONFIG=%KCFG%"
+                                kubectl apply -f "%APP_DIR%\\service.yaml"
+                                if errorlevel 1 exit /b 1
+                            '''
+                        }
+
+                        dir("${APP_DIR}") {
+                            script {
+                                def manifest = readFile('deployment.yaml')
+                                    .replaceAll(
+                                        /(?m)^(\s*image:\s*)\S+.*$/,
+                                        '$1' + "${IMAGE_REPO}:${VERSION}"
+                                    )
+
+                                writeFile(
+                                    file: 'deployment.rendered.yaml',
+                                    text: manifest
+                                )
+                            }
+                        }
+
+                        if (isUnix()) {
+                            sh '''
+                                export KUBECONFIG="$KCFG"
+                                kubectl apply -f "$APP_DIR/deployment.rendered.yaml"
+                            '''
+                        } else {
+                            bat '''
+                                @echo off
+                                set "KUBECONFIG=%KCFG%"
+                                kubectl apply -f "%APP_DIR%\\deployment.rendered.yaml"
+                                if errorlevel 1 exit /b 1
+                            '''
+                        }
                     }
                 }
             }
@@ -86,15 +178,48 @@ pipeline {
 
         stage('Health Check & Auto Rollback') {
             steps {
-                script {
-                    try {
-                        runCmd("kubectl rollout status deployment/${APP_NAME} --timeout=60s")
-                        echo "Release ${VERSION} is healthy."
-                    } catch (err) {
-                        echo "Release ${VERSION} FAILED its health check. Rolling back to the previous stable release..."
-                        runCmd("kubectl rollout undo deployment/${APP_NAME}")
-                        runCmd("kubectl rollout status deployment/${APP_NAME} --timeout=90s")
-                        error("Release ${VERSION} failed and was rolled back automatically.")
+                withCredentials([
+                    file(
+                        credentialsId: 'kubeconfig-creds',
+                        variable: 'KCFG'
+                    )
+                ]) {
+                    script {
+                        try {
+                            if (isUnix()) {
+                                withEnv(["KUBECONFIG=${env.KCFG}"]) {
+                                    sh "kubectl rollout status deployment/${APP_NAME} --timeout=60s"
+                                }
+                            } else {
+                                bat """
+                                    @echo off
+                                    set "KUBECONFIG=%KCFG%"
+                                    kubectl rollout status deployment/${APP_NAME} --timeout=60s
+                                """
+                            }
+
+                            echo "Release ${VERSION} is healthy."
+                        } catch (err) {
+                            echo "Release ${VERSION} failed. Attempting rollback."
+
+                            if (isUnix()) {
+                                withEnv(["KUBECONFIG=${env.KCFG}"]) {
+                                    sh "kubectl rollout undo deployment/${APP_NAME}"
+                                    sh "kubectl rollout status deployment/${APP_NAME} --timeout=90s"
+                                }
+                            } else {
+                                bat """
+                                    @echo off
+                                    set "KUBECONFIG=%KCFG%"
+                                    kubectl rollout undo deployment/${APP_NAME}
+                                    if errorlevel 1 exit /b 1
+                                    kubectl rollout status deployment/${APP_NAME} --timeout=90s
+                                    if errorlevel 1 exit /b 1
+                                """
+                            }
+
+                            error("Release ${VERSION} failed. Rollback attempted.")
+                        }
                     }
                 }
             }
@@ -105,13 +230,49 @@ pipeline {
         always {
             script {
                 try {
-                    runCmd("kubectl get pods -l app=${APP_NAME}")
-                    runCmd("kubectl rollout history deployment/${APP_NAME}")
-                } catch (ignored) { echo 'kubectl summary skipped' }
-                try { runCmd('docker logout') } catch (ignored) { }
+                    withCredentials([
+                        file(
+                            credentialsId: 'kubeconfig-creds',
+                            variable: 'KCFG'
+                        )
+                    ]) {
+                        if (isUnix()) {
+                            withEnv(["KUBECONFIG=${env.KCFG}"]) {
+                                sh "kubectl get pods -l app=${APP_NAME}"
+                                sh "kubectl rollout history deployment/${APP_NAME}"
+                            }
+                        } else {
+                            bat """
+                                @echo off
+                                set "KUBECONFIG=%KCFG%"
+                                kubectl get pods -l app=${APP_NAME}
+                                kubectl rollout history deployment/${APP_NAME}
+                            """
+                        }
+                    }
+                } catch (ignored) {
+                    echo 'Kubernetes summary skipped.'
+                }
+
+                try {
+                    if (isUnix()) {
+                        sh 'docker logout'
+                    } else {
+                        bat 'docker logout'
+                    }
+                } catch (ignored) {
+                    echo 'Docker logout skipped.'
+                }
             }
         }
-        success { echo "Deployed ${VERSION}. Open http://localhost:30010" }
-        failure { echo 'Pipeline failed - see the stage logs above. Previous stable release is serving traffic.' }
+
+        success {
+            echo "Release ${VERSION} deployed successfully."
+            echo 'Application URL: http://localhost:30010'
+        }
+
+        failure {
+            echo 'Pipeline failed. Check the stage logs for the cause.'
+        }
     }
 }
