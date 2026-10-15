@@ -1,3 +1,7 @@
+// Jenkins credential IDs - these MUST match the IDs in Manage Jenkins > Credentials
+def DOCKER_CRED_ID = 'docker'       // Username with password (Docker Hub user + access token)
+def KUBE_CRED_ID   = 'kubeconfig'   // Secret file (your ~/.kube/config)
+
 pipeline {
     agent any
 
@@ -71,20 +75,27 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'docker',
+                        credentialsId: DOCKER_CRED_ID,
                         usernameVariable: 'DH_USER',
                         passwordVariable: 'DH_TOKEN'
                     )
                 ]) {
-                    bat '''
-                        @echo off
-                        powershell -NoProfile -Command "$env:DH_TOKEN | docker login -u $env:DH_USER --password-stdin"
-                        if errorlevel 1 exit /b 1
-                        docker push %IMAGE_REPO%:%VERSION%
-                        if errorlevel 1 exit /b 1
-                        docker push %IMAGE_REPO%:latest
-                        if errorlevel 1 exit /b 1
-                    '''
+                    script {
+                        bat '''
+                            @echo off
+                            powershell -NoProfile -Command "$env:DH_TOKEN | docker login -u $env:DH_USER --password-stdin"
+                            if errorlevel 1 exit /b 1
+                            docker push %IMAGE_REPO%:%VERSION%
+                            if errorlevel 1 exit /b 1
+                        '''
+
+                        // Only move the 'latest' tag for healthy releases
+                        if (!params.FAULTY_RELEASE) {
+                            bat 'docker push %IMAGE_REPO%:latest'
+                        } else {
+                            echo 'Faulty release: skipping push of the latest tag.'
+                        }
+                    }
                 }
             }
         }
@@ -93,7 +104,7 @@ pipeline {
             steps {
                 withCredentials([
                     file(
-                        credentialsId: 'kubeconfig',
+                        credentialsId: KUBE_CRED_ID,
                         variable: 'KCFG'
                     )
                 ]) {
@@ -101,8 +112,9 @@ pipeline {
                         dir("${APP_DIR}") {
                             def manifest = readFile('deployment.yaml')
 
+                            // Normal string (not /slashy/) so Groovy can compile it
                             manifest = manifest.replaceAll(
-                                /(?m)^(\s*image:\s*)\S+.*$/,
+                                '(?m)^(\\s*image:\\s*)\\S+.*$',
                                 '$1' + env.IMAGE_REPO + ':' + env.VERSION
                             )
 
@@ -123,6 +135,7 @@ pipeline {
                             if errorlevel 1 exit /b 1
                             kubectl apply -f "%APP_DIR%/deployment.rendered.yaml"
                             if errorlevel 1 exit /b 1
+                            kubectl annotate deployment/%APP_NAME% kubernetes.io/change-cause="Release %VERSION% (faulty=%FAULTY_RELEASE%)" --overwrite
                         '''
                     }
                 }
@@ -133,7 +146,7 @@ pipeline {
             steps {
                 withCredentials([
                     file(
-                        credentialsId: 'kubeconfig-creds',
+                        credentialsId: KUBE_CRED_ID,
                         variable: 'KCFG'
                     )
                 ]) {
@@ -148,10 +161,10 @@ pipeline {
                                 if errorlevel 1 exit /b 1
                             '''
 
-                            echo "Release ${VERSION} deployed and verified successfully."
+                            echo "Release ${env.VERSION} deployed and verified successfully."
 
                         } catch (err) {
-                            echo "FAILED RELEASE DETECTED: ${VERSION}"
+                            echo "FAILED RELEASE DETECTED: ${env.VERSION}"
                             echo 'Attempting rollback to the previous release.'
 
                             bat '''
@@ -171,7 +184,7 @@ pipeline {
                                 currentBuild.result = 'UNSTABLE'
                                 echo 'Expected faulty release was rejected and rollback succeeded.'
                             } else {
-                                error("Release ${VERSION} failed. Rollback succeeded, but the normal release failed its health check.")
+                                error("Release ${env.VERSION} failed. Rollback succeeded, but the normal release failed its health check.")
                             }
                         }
                     }
@@ -186,14 +199,15 @@ pipeline {
                 try {
                     withCredentials([
                         file(
-                            credentialsId: 'kubeconfig-creds',
+                            credentialsId: KUBE_CRED_ID,
                             variable: 'KCFG'
                         )
                     ]) {
                         bat '''
                             @echo off
                             set "KUBECONFIG=%KCFG%"
-                            kubectl get pods -l app=%APP_NAME%
+                            kubectl get pods -l app=%APP_NAME% -o wide
+                            kubectl get svc %APP_NAME%
                             kubectl rollout history deployment/%APP_NAME%
                         '''
                     }
@@ -210,8 +224,8 @@ pipeline {
         }
 
         success {
-            echo "Release ${VERSION} deployed successfully."
-            echo "Application URL: ${APP_URL}"
+            echo "Release ${env.VERSION} deployed successfully."
+            echo "Application URL: ${env.APP_URL}"
         }
 
         unstable {
