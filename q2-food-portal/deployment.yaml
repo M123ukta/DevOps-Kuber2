@@ -1,29 +1,37 @@
+# Blue-green Deployment template (3 replicas).
+# Applied as-is it creates the first colour. The Jenkins pipeline renders a copy
+# for whichever colour is idle (swapping the colour name) and sets the image tag.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: food-portal-green
+  name: food-portal-blue
   labels:
     app: food-portal
-    version: green
+    version: blue
 spec:
   replicas: 3
-  revisionHistoryLimit: 3
+  revisionHistoryLimit: 5
   progressDeadlineSeconds: 60
   minReadySeconds: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: food-portal
-      version: green
+      version: blue
   template:
     metadata:
       labels:
         app: food-portal
-        version: green
+        version: blue
     spec:
       containers:
         - name: food-portal
-          image: muktamotwani/food-portal:v2
-          imagePullPolicy: Always
+          image: muktamotwani/food-portal:v1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
           readinessProbe:

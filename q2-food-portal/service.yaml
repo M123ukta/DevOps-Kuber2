@@ -1,0 +1,35 @@
+# LIVE Service: real users. The pipeline switches its "version" selector
+# between blue and green to cut traffic over.
+apiVersion: v1
+kind: Service
+metadata:
+  name: food-portal-live
+  labels:
+    app: food-portal
+spec:
+  type: NodePort
+  selector:
+    app: food-portal
+    version: blue
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30050
+---
+# PREVIEW Service: the team validates the new (idle) colour here before
+# it receives real traffic. The pipeline points it at the idle colour.
+apiVersion: v1
+kind: Service
+metadata:
+  name: food-portal-preview
+  labels:
+    app: food-portal
+spec:
+  type: NodePort
+  selector:
+    app: food-portal
+    version: green
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30051
