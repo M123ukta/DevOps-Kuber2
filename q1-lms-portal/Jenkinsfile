@@ -1,4 +1,4 @@
-
+```groovy
 pipeline {
     agent any
 
@@ -21,12 +21,12 @@ pipeline {
     }
 
     environment {
-        GIT_URL        = 'https://github.com/M123ukta/DevOps-Kuber2.git'
         DOCKERHUB_USER = 'muktamotwani'
         APP_DIR        = 'q1-lms-portal'
         APP_NAME       = 'lms-portal'
         IMAGE_REPO     = 'muktamotwani/lms-portal'
         VERSION        = "v${BUILD_NUMBER}"
+        APP_URL        = 'http://localhost:30010'
     }
 
     stages {
@@ -39,36 +39,15 @@ pipeline {
 
         stage('Verify Tools') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'docker --version'
-                        sh 'kubectl version --client'
-                    } else {
-                        bat 'docker --version'
-                        bat 'kubectl version --client'
-                    }
-                }
+                bat 'docker --version'
+                bat 'kubectl version --client'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {
-                    script {
-                        if (isUnix()) {
-                            sh """
-                                docker build \
-                                  --build-arg APP_VERSION=${VERSION} \
-                                  --build-arg FAULTY=${params.FAULTY_RELEASE} \
-                                  -t ${IMAGE_REPO}:${VERSION} \
-                                  -t ${IMAGE_REPO}:latest .
-                            """
-                        } else {
-                            bat """
-                                docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} -t ${IMAGE_REPO}:latest .
-                            """
-                        }
-                    }
+                    bat 'docker build --build-arg APP_VERSION=%VERSION% --build-arg FAULTY=%FAULTY_RELEASE% -t %IMAGE_REPO%:%VERSION% -t %IMAGE_REPO%:latest .'
                 }
             }
         }
@@ -76,12 +55,14 @@ pipeline {
         stage('Test Image') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh "docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t"
-                        sh "docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html"
+                    bat 'docker run --rm %IMAGE_REPO%:%VERSION% nginx -t'
+                    bat 'docker run --rm %IMAGE_REPO%:%VERSION% test -f /usr/share/nginx/html/index.html'
+
+                    if (!params.FAULTY_RELEASE) {
+                        bat 'docker run --rm %IMAGE_REPO%:%VERSION% test -f /usr/share/nginx/html/health.html'
+                        echo 'Healthy image checks passed.'
                     } else {
-                        bat "docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t"
-                        bat "docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html"
+                        echo 'Fault injection enabled; health.html is intentionally removed.'
                     }
                 }
             }
@@ -96,26 +77,15 @@ pipeline {
                         passwordVariable: 'DH_TOKEN'
                     )
                 ]) {
-                    script {
-                        if (isUnix()) {
-                            sh '''
-                                set +x
-                                echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin
-                                docker push "$IMAGE_REPO:$VERSION"
-                                docker push "$IMAGE_REPO:latest"
-                            '''
-                        } else {
-                            bat '''
-                                @echo off
-                                echo %DH_TOKEN%| docker login -u %DH_USER% --password-stdin
-                                if errorlevel 1 exit /b 1
-                                docker push %IMAGE_REPO%:%VERSION%
-                                if errorlevel 1 exit /b 1
-                                docker push %IMAGE_REPO%:latest
-                                if errorlevel 1 exit /b 1
-                            '''
-                        }
-                    }
+                    bat '''
+                        @echo off
+                        powershell -NoProfile -Command "$env:DH_TOKEN | docker login -u $env:DH_USER --password-stdin"
+                        if errorlevel 1 exit /b 1
+                        docker push %IMAGE_REPO%:%VERSION%
+                        if errorlevel 1 exit /b 1
+                        docker push %IMAGE_REPO%:latest
+                        if errorlevel 1 exit /b 1
+                    '''
                 }
             }
         }
@@ -129,54 +99,38 @@ pipeline {
                     )
                 ]) {
                     script {
-                        if (isUnix()) {
-                            sh '''
-                                export KUBECONFIG="$KCFG"
-                                kubectl apply -f "$APP_DIR/service.yaml"
-                            '''
-                        } else {
-                            bat '''
-                                @echo off
-                                set "KUBECONFIG=%KCFG%"
-                                kubectl apply -f "%APP_DIR%\\service.yaml"
-                                if errorlevel 1 exit /b 1
-                            '''
-                        }
-
                         dir("${APP_DIR}") {
-                            script {
-                                def manifest = readFile('deployment.yaml')
-                                    .replaceAll(
-                                        /(?m)^(\s*image:\s*)\S+.*$/,
-                                        '$1' + "${IMAGE_REPO}:${VERSION}"
-                                    )
+                            def manifest = readFile('deployment.yaml')
 
-                                writeFile(
-                                    file: 'deployment.rendered.yaml',
-                                    text: manifest
-                                )
+                            manifest = manifest.replaceAll(
+                                /(?m)^(\s*image:\s*)\S+.*$/,
+                                '$1' + env.IMAGE_REPO + ':' + env.VERSION
+                            )
+
+                            if (!manifest.contains("image: ${env.IMAGE_REPO}:${env.VERSION}")) {
+                                error('Could not update the deployment image tag.')
                             }
+
+                            writeFile(
+                                file: 'deployment.rendered.yaml',
+                                text: manifest
+                            )
                         }
 
-                        if (isUnix()) {
-                            sh '''
-                                export KUBECONFIG="$KCFG"
-                                kubectl apply -f "$APP_DIR/deployment.rendered.yaml"
-                            '''
-                        } else {
-                            bat '''
-                                @echo off
-                                set "KUBECONFIG=%KCFG%"
-                                kubectl apply -f "%APP_DIR%\\deployment.rendered.yaml"
-                                if errorlevel 1 exit /b 1
-                            '''
-                        }
+                        bat '''
+                            @echo off
+                            set "KUBECONFIG=%KCFG%"
+                            kubectl apply -f "%APP_DIR%/service.yaml"
+                            if errorlevel 1 exit /b 1
+                            kubectl apply -f "%APP_DIR%/deployment.rendered.yaml"
+                            if errorlevel 1 exit /b 1
+                        '''
                     }
                 }
             }
         }
 
-        stage('Health Check & Auto Rollback') {
+        stage('Health Check and Auto Rollback') {
             steps {
                 withCredentials([
                     file(
@@ -186,39 +140,40 @@ pipeline {
                 ]) {
                     script {
                         try {
-                            if (isUnix()) {
-                                withEnv(["KUBECONFIG=${env.KCFG}"]) {
-                                    sh "kubectl rollout status deployment/${APP_NAME} --timeout=60s"
-                                }
-                            } else {
-                                bat """
-                                    @echo off
-                                    set "KUBECONFIG=%KCFG%"
-                                    kubectl rollout status deployment/${APP_NAME} --timeout=60s
-                                """
-                            }
+                            bat '''
+                                @echo off
+                                set "KUBECONFIG=%KCFG%"
+                                kubectl rollout status deployment/%APP_NAME% --timeout=120s
+                                if errorlevel 1 exit /b 1
+                                powershell -NoProfile -ExecutionPolicy Bypass -Command "$r = Invoke-WebRequest -Uri '%APP_URL%' -UseBasicParsing; if ($r.StatusCode -ne 200 -or [string]::IsNullOrWhiteSpace($r.Content)) { exit 1 }"
+                                if errorlevel 1 exit /b 1
+                            '''
 
-                            echo "Release ${VERSION} is healthy."
+                            echo "Release ${VERSION} deployed and verified successfully."
+
                         } catch (err) {
-                            echo "Release ${VERSION} failed. Attempting rollback."
+                            echo "FAILED RELEASE DETECTED: ${VERSION}"
+                            echo 'Attempting rollback to the previous release.'
 
-                            if (isUnix()) {
-                                withEnv(["KUBECONFIG=${env.KCFG}"]) {
-                                    sh "kubectl rollout undo deployment/${APP_NAME}"
-                                    sh "kubectl rollout status deployment/${APP_NAME} --timeout=90s"
-                                }
+                            bat '''
+                                @echo off
+                                set "KUBECONFIG=%KCFG%"
+                                kubectl rollout undo deployment/%APP_NAME%
+                                if errorlevel 1 exit /b 1
+                                kubectl rollout status deployment/%APP_NAME% --timeout=120s
+                                if errorlevel 1 exit /b 1
+                                powershell -NoProfile -ExecutionPolicy Bypass -Command "$r = Invoke-WebRequest -Uri '%APP_URL%' -UseBasicParsing; if ($r.StatusCode -ne 200 -or [string]::IsNullOrWhiteSpace($r.Content)) { exit 1 }"
+                                if errorlevel 1 exit /b 1
+                            '''
+
+                            echo 'ROLLBACK VERIFIED: the restored application responds successfully.'
+
+                            if (params.FAULTY_RELEASE) {
+                                currentBuild.result = 'UNSTABLE'
+                                echo 'Expected faulty release was rejected and rollback succeeded.'
                             } else {
-                                bat """
-                                    @echo off
-                                    set "KUBECONFIG=%KCFG%"
-                                    kubectl rollout undo deployment/${APP_NAME}
-                                    if errorlevel 1 exit /b 1
-                                    kubectl rollout status deployment/${APP_NAME} --timeout=90s
-                                    if errorlevel 1 exit /b 1
-                                """
+                                error("Release ${VERSION} failed. Rollback succeeded, but the normal release failed its health check.")
                             }
-
-                            error("Release ${VERSION} failed. Rollback attempted.")
                         }
                     }
                 }
@@ -236,30 +191,19 @@ pipeline {
                             variable: 'KCFG'
                         )
                     ]) {
-                        if (isUnix()) {
-                            withEnv(["KUBECONFIG=${env.KCFG}"]) {
-                                sh "kubectl get pods -l app=${APP_NAME}"
-                                sh "kubectl rollout history deployment/${APP_NAME}"
-                            }
-                        } else {
-                            bat """
-                                @echo off
-                                set "KUBECONFIG=%KCFG%"
-                                kubectl get pods -l app=${APP_NAME}
-                                kubectl rollout history deployment/${APP_NAME}
-                            """
-                        }
+                        bat '''
+                            @echo off
+                            set "KUBECONFIG=%KCFG%"
+                            kubectl get pods -l app=%APP_NAME%
+                            kubectl rollout history deployment/%APP_NAME%
+                        '''
                     }
                 } catch (ignored) {
                     echo 'Kubernetes summary skipped.'
                 }
 
                 try {
-                    if (isUnix()) {
-                        sh 'docker logout'
-                    } else {
-                        bat 'docker logout'
-                    }
+                    bat 'docker logout'
                 } catch (ignored) {
                     echo 'Docker logout skipped.'
                 }
@@ -268,7 +212,11 @@ pipeline {
 
         success {
             echo "Release ${VERSION} deployed successfully."
-            echo 'Application URL: http://localhost:30010'
+            echo "Application URL: ${APP_URL}"
+        }
+
+        unstable {
+            echo 'Faulty-release test completed with rollback, or the build was otherwise marked unstable.'
         }
 
         failure {
@@ -276,3 +224,4 @@ pipeline {
         }
     }
 }
+```
