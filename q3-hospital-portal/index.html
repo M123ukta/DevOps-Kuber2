@@ -6,6 +6,15 @@
   <meta name="description" content="CityCare Hospital online appointment portal: doctors, specializations, consultation timings, available slots and announcements.">
   <title>CityCare Hospital | Online Appointment Portal</title>
   <link rel="stylesheet" href="style.css">
+  <!-- UPDATE (v2): styles for the newly added doctor and announcement -->
+  <style>
+    .avatar.d5 { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: #fff; }
+    .new-badge { display: inline-block; background: #16a34a; color: #fff; font-size: .68rem; font-weight: 700;
+                 padding: 2px 8px; border-radius: 999px; vertical-align: middle; margin-left: 6px; letter-spacing: .5px; }
+    .doctor.is-new { outline: 2px solid #16a34a; outline-offset: -2px; }
+    .tag.purple { background: #ede9fe; color: #6d28d9; }
+    tr.is-new td { background: #f0fdf4; }
+  </style>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -80,7 +89,14 @@
             <p>MS (Ortho) · 16 yrs experience</p>
             <span class="badge ok">Available today</span>
           </article>
-          <!-- ADD-NEW-DOCTOR-HERE -->
+          <!-- UPDATE (v2): new doctor added -->
+          <article class="card doctor is-new">
+            <div class="avatar d5" aria-hidden="true">SR</div>
+            <h3>Dr. Sana Rao <span class="new-badge">NEW</span></h3>
+            <p class="spec">Dermatologist</p>
+            <p>MD (Dermatology) · 9 yrs experience</p>
+            <span class="badge ok">Available today</span>
+          </article>
         </div>
       </div>
     </section>
@@ -122,6 +138,8 @@
               <tr><td>Dr. Arjun Kapoor</td><td>Neurology</td><td>Mon, Wed, Fri</td><td>10:00 – 14:00</td><td>—</td></tr>
               <tr><td>Dr. Priya Sharma</td><td>Pediatrics</td><td>Mon – Sat</td><td>09:30 – 13:30</td><td>17:00 – 19:00</td></tr>
               <tr><td>Dr. Rohan Nair</td><td>Orthopedics</td><td>Tue, Thu, Sat</td><td>11:00 – 15:00</td><td>—</td></tr>
+              <!-- UPDATE (v2): timings for the new doctor -->
+              <tr class="is-new"><td>Dr. Sana Rao <span class="new-badge">NEW</span></td><td>Dermatology</td><td>Mon – Fri</td><td>10:00 – 13:00</td><td>17:30 – 19:30</td></tr>
             </tbody>
           </table>
         </div>
@@ -163,10 +181,11 @@
         <h2>Hospital Announcements</h2>
         <p class="sub">Latest updates from CityCare.</p>
         <ul class="notices" id="noticeList">
+          <!-- UPDATE (v2): new announcement added -->
+          <li><span class="tag purple">New</span><div><h3>Welcome Dr. Sana Rao, Dermatology <span class="new-badge">NEW</span></h3><p>Our new Dermatology OPD opens this week, Mon – Fri. Book skin, hair and allergy consultations online.</p></div></li>
           <li><span class="tag blue">Camp</span><div><h3>Free Heart Health Check-up Camp</h3><p>Join us on 25 Oct, 9 AM – 1 PM. Free ECG and BP screening for all visitors.</p></div></li>
           <li><span class="tag green">Service</span><div><h3>Online Reports Now Available</h3><p>Download lab and radiology reports from the patient portal within 6 hours.</p></div></li>
           <li><span class="tag amber">Notice</span><div><h3>OPD Timings on Public Holidays</h3><p>On public holidays, OPD runs 9 AM – 1 PM. Emergency services remain 24×7.</p></div></li>
-          <!-- ADD-NEW-ANNOUNCEMENT-HERE -->
         </ul>
       </div>
     </section>
