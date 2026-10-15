@@ -1,14 +1,18 @@
 // ---------------------------------------------------------------------------
 // Q3 - Hospital Appointment Portal : full CI/CD with automatic rollback
-// GitHub -> Jenkins -> Docker -> Docker Hub -> Kubernetes (3 replicas, NodePort 30030)
-// Works on Jenkins running on Linux (sh) or Windows (bat).
-// Jenkins credentials required:
-//   dockerhub-creds  : Username with password   (Docker Hub)
-//   kubeconfig-creds : Secret file              (kubeconfig of Docker Desktop)
+// GitHub -> Jenkins -> Docker -> Docker Hub -> Kubernetes (3 replicas, NodePort 30060)
+//
+// Jenkins credentials:
+//   dockerhub  : Username with password  (Docker Hub user + access token)
+//   kubeconfig : Secret file             (Docker Desktop kubeconfig)
 // ---------------------------------------------------------------------------
 
-def runCmd(String c)   { if (isUnix()) { sh c } else { bat "@echo off\n${c}" } }
-def v(String name)  { return isUnix() ? "\$${name}" : "%${name}%" }
+// HTTP check from the Jenkins machine; retries for ~30s. Returns 0 on HTTP 200.
+def httpCheck(String url) {
+    return bat(returnStatus: true, script: """@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -Command "for (\$i = 0; \$i -lt 10; \$i++) { try { \$r = Invoke-WebRequest -Uri '${url}' -UseBasicParsing -TimeoutSec 5; if (\$r.StatusCode -eq 200) { exit 0 } } catch {}; Start-Sleep -Seconds 3 }; exit 1"
+""")
+}
 
 pipeline {
     agent any
@@ -19,30 +23,34 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
-    // Every modification committed to GitHub re-triggers the pipeline (polled every ~2 min).
-    triggers { pollSCM('H/2 * * * *') }
+    // Every change committed to GitHub re-triggers the pipeline (polled every ~2 min).
+    triggers {
+        pollSCM('H/2 * * * *')
+    }
 
     parameters {
         booleanParam(name: 'FAULTY_RELEASE', defaultValue: false,
-                     description: 'Tick to deploy a deliberately faulty release and watch the automatic rollback')
+                     description: 'Deploy a deliberately faulty release to demonstrate failed-rollout detection and automatic rollback')
     }
 
     environment {
-        GIT_URL        = 'https://github.com/M123ukta/DevOps-Kuber2'
-        DOCKERHUB_USER = 'muktamotwani'
-        APP_DIR        = 'q3-hospital-portal'
-        APP_NAME       = 'hospital-portal'
-        IMAGE_REPO     = "${DOCKERHUB_USER}/hospital-portal"
-        VERSION        = "v${BUILD_NUMBER}"
-        DH_CREDS       = credentials('docker')
-        KUBECONFIG     = credentials('kubeconfig')
+        APP_DIR    = 'q3-hospital-portal'
+        APP_NAME   = 'hospital-portal'
+        SVC_NAME   = 'hospital-portal-service'
+        IMAGE_REPO = 'muktamotwani/hospital-portal'
+        VERSION    = "v${BUILD_NUMBER}"
+        APP_URL    = 'http://localhost:30060'
+        TEST_PORT  = '18081'
+        KUBECONFIG = credentials('kubeconfig')
     }
 
     stages {
         // 1. Clone the application from GitHub
         stage('Clone Code') {
             steps {
-                git branch: 'main', url: "${GIT_URL}"
+                echo 'Retrieving the latest code from GitHub'
+                checkout scm
+                bat '@echo off\ngit log -1 --pretty=format:"Commit %%h - %%s (%%an)"'
             }
         }
 
@@ -50,39 +58,95 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {
-                    runCmd("docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} -t ${IMAGE_REPO}:latest .")
+                    retry(3) {
+                        bat 'docker build --build-arg APP_VERSION=%VERSION% --build-arg FAULTY=%FAULTY_RELEASE% -t %IMAGE_REPO%:%VERSION% .'
+                    }
                 }
             }
         }
 
-        // 3. Verify the image was built successfully
+        // 3. Verify the image was built correctly and the app serves pages
         stage('Test Application') {
             steps {
-                runCmd("docker image inspect ${IMAGE_REPO}:${VERSION}")
-                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t")
-                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html")
+                script {
+                    bat 'docker image inspect %IMAGE_REPO%:%VERSION% --format "Image built: {{.Id}}"'
+                    bat 'docker run --rm %IMAGE_REPO%:%VERSION% nginx -t'
+                    bat 'docker run --rm %IMAGE_REPO%:%VERSION% test -s /usr/share/nginx/html/index.html'
+                    bat 'docker run --rm %IMAGE_REPO%:%VERSION% test -s /usr/share/nginx/html/style.css'
+                    bat 'docker run --rm %IMAGE_REPO%:%VERSION% grep -q %VERSION% /usr/share/nginx/html/index.html'
+
+                    // Run the container locally and request the home page
+                    bat '@echo off\ndocker rm -f hospital-test-%BUILD_NUMBER% >nul 2>&1\ndocker run -d --name hospital-test-%BUILD_NUMBER% -p %TEST_PORT%:80 %IMAGE_REPO%:%VERSION%'
+                    try {
+                        if (httpCheck("http://localhost:${env.TEST_PORT}/") != 0) {
+                            error('Local container test failed: home page did not return HTTP 200.')
+                        }
+                        echo "Local container test passed on http://localhost:${env.TEST_PORT}"
+                    } finally {
+                        bat(returnStatus: true, script: '@echo off\ndocker rm -f hospital-test-%BUILD_NUMBER%')
+                    }
+
+                    if (!params.FAULTY_RELEASE) {
+                        bat 'docker run --rm %IMAGE_REPO%:%VERSION% test -f /usr/share/nginx/html/health.html'
+                        echo 'All application tests passed.'
+                    } else {
+                        echo 'Fault injection enabled: health.html intentionally removed; Kubernetes readiness probe will reject this release.'
+                    }
+                }
             }
         }
 
         // 4. Authenticate with Docker Hub and push
         stage('Push Image') {
             steps {
-                runCmd("echo ${v('DH_CREDS_PSW')}| docker login -u ${v('DH_CREDS_USR')} --password-stdin")
-                runCmd("docker push ${IMAGE_REPO}:${VERSION}")
-                runCmd("docker push ${IMAGE_REPO}:latest")
+                withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                                                  usernameVariable: 'DH_USER',
+                                                  passwordVariable: 'DH_TOKEN')]) {
+                    script {
+                        retry(3) {
+                            bat '''
+                                @echo off
+                                powershell -NoProfile -Command "$env:DH_TOKEN | docker login -u $env:DH_USER --password-stdin"
+                                if errorlevel 1 exit /b 1
+                                docker push %IMAGE_REPO%:%VERSION%
+                                if errorlevel 1 exit /b 1
+                            '''
+                        }
+                        if (!params.FAULTY_RELEASE) {
+                            bat 'docker tag %IMAGE_REPO%:%VERSION% %IMAGE_REPO%:latest'
+                            retry(3) {
+                                bat 'docker push %IMAGE_REPO%:latest'
+                            }
+                        } else {
+                            echo 'Faulty release: not moving the latest tag.'
+                        }
+                    }
+                }
             }
         }
 
         // 5/6. Deploy with kubectl: Deployment (3 replicas) + NodePort Service
         stage('Deploy to Kubernetes') {
             steps {
-                dir("${APP_DIR}") {
-                    script {
-                        def manifest = readFile('deployment.yaml').replaceAll(/image:\s*\S+/, "image: ${IMAGE_REPO}:${VERSION}")
-                        writeFile file: 'deployment.rendered.yaml', text: manifest
-                        runCmd('kubectl apply -f service.yaml')
-                        runCmd('kubectl apply -f deployment.rendered.yaml')
+                script {
+                    dir("${APP_DIR}") {
+                        def manifest = readFile('deployment.yaml')
+                        manifest = manifest.replaceAll('(?m)^(\\s*image:\\s*)\\S+.*$',
+                                                       '$1' + env.IMAGE_REPO + ':' + env.VERSION)
+                        if (!manifest.contains("image: ${env.IMAGE_REPO}:${env.VERSION}")) {
+                            error('Could not update the image tag in deployment.yaml.')
+                        }
+                        writeFile(file: 'deployment.rendered.yaml', text: manifest)
                     }
+
+                    bat '''
+                        @echo off
+                        kubectl apply -f "%APP_DIR%/service.yaml"
+                        if errorlevel 1 exit /b 1
+                        kubectl apply -f "%APP_DIR%/deployment.rendered.yaml"
+                        if errorlevel 1 exit /b 1
+                        kubectl annotate deployment/%APP_NAME% kubernetes.io/change-cause="Release %VERSION% (faulty=%FAULTY_RELEASE%)" --overwrite
+                    '''
                 }
             }
         }
@@ -91,14 +155,37 @@ pipeline {
         stage('Verify Rollout & Auto Rollback') {
             steps {
                 script {
-                    try {
-                        runCmd("kubectl rollout status deployment/${APP_NAME} --timeout=60s")
-                        echo "Release ${VERSION} is healthy."
-                    } catch (err) {
-                        echo "Release ${VERSION} FAILED its health check. Rolling back to the previous stable release..."
-                        runCmd("kubectl rollout undo deployment/${APP_NAME}")
-                        runCmd("kubectl rollout status deployment/${APP_NAME} --timeout=90s")
-                        error("Release ${VERSION} failed and was rolled back automatically.")
+                    def ok = bat(returnStatus: true,
+                                 script: '@echo off\nkubectl rollout status deployment/%APP_NAME% --timeout=120s') == 0
+                    if (ok) {
+                        ok = httpCheck("${env.APP_URL}/health.html") == 0 && httpCheck("${env.APP_URL}/") == 0
+                    }
+
+                    if (ok) {
+                        echo "Release ${env.VERSION} is healthy: 3/3 pods Ready and ${env.APP_URL} returns HTTP 200."
+                    } else {
+                        echo "FAILED RELEASE DETECTED: ${env.VERSION}"
+                        bat(returnStatus: true, script: '@echo off\nkubectl get pods -l app=%APP_NAME%')
+                        echo 'Rolling back to the previous stable release...'
+
+                        bat '''
+                            @echo off
+                            kubectl rollout undo deployment/%APP_NAME%
+                            if errorlevel 1 exit /b 1
+                            kubectl rollout status deployment/%APP_NAME% --timeout=120s
+                            if errorlevel 1 exit /b 1
+                        '''
+                        if (httpCheck("${env.APP_URL}/") != 0) {
+                            error('Rollback completed but the application is not responding.')
+                        }
+                        echo "ROLLBACK VERIFIED: the previous stable release is serving ${env.APP_URL} (HTTP 200)."
+
+                        if (params.FAULTY_RELEASE) {
+                            currentBuild.result = 'UNSTABLE'
+                            echo 'Expected faulty release was rejected and rolled back automatically.'
+                        } else {
+                            error("Release ${env.VERSION} failed its health check and was rolled back.")
+                        }
                     }
                 }
             }
@@ -108,15 +195,22 @@ pipeline {
     post {
         always {
             script {
-                try {
-                    runCmd("kubectl get pods -l app=${APP_NAME}")
-                    runCmd("kubectl get svc hospital-portal-service")
-                    runCmd("kubectl rollout history deployment/${APP_NAME}")
-                } catch (ignored) { echo 'kubectl summary skipped' }
-                try { runCmd('docker logout') } catch (ignored) { }
+                bat(returnStatus: true, script: '''
+                    @echo off
+                    echo ===== Deployment =====
+                    kubectl get deployment %APP_NAME% -o wide
+                    echo ===== Pods =====
+                    kubectl get pods -l app=%APP_NAME% -o wide
+                    echo ===== Service =====
+                    kubectl get svc %SVC_NAME%
+                    echo ===== Rollout history =====
+                    kubectl rollout history deployment/%APP_NAME%
+                ''')
+                bat(returnStatus: true, script: 'docker logout')
             }
         }
-        success { echo "Deployed ${VERSION}. Open http://localhost:30030" }
-        failure { echo 'Pipeline failed - see the stage logs above. Previous stable release is serving traffic.' }
+        success  { echo "Release ${env.VERSION} deployed. Open ${env.APP_URL}" }
+        unstable { echo "Faulty release ${env.VERSION} was rolled back. Stable version still serving ${env.APP_URL}" }
+        failure  { echo 'Pipeline failed - see the stage logs above.' }
     }
 }
