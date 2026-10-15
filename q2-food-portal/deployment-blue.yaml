@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: food-portal
-          image: YOUR_DOCKERHUB_USERNAME/food-portal:v1
+          image: muktamotwani/food-portal:v1
           imagePullPolicy: Always
           ports:
             - containerPort: 80

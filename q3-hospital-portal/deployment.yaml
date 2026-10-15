@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: hospital-portal
-          image: YOUR_DOCKERHUB_USERNAME/hospital-portal:v1
+          image: muktamotwani/hospital-portal:v1
           imagePullPolicy: Always
           ports:
             - containerPort: 80

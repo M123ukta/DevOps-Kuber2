@@ -38,15 +38,15 @@ pipeline {
     }
 
     environment {
-        GIT_URL        = 'https://github.com/YOUR_GITHUB_USERNAME/devops-assessment.git'
-        DOCKERHUB_USER = 'YOUR_DOCKERHUB_USERNAME'
+        GIT_URL        = 'https://github.com/M123ukta/DevOps-Kuber2'
+        DOCKERHUB_USER = 'muktamotwani'
         APP_DIR        = 'q2-food-portal'
         IMAGE_REPO     = "${DOCKERHUB_USER}/food-portal"
         VERSION        = "v${BUILD_NUMBER}"
         LIVE_SVC       = 'food-portal-live'
         PREVIEW_SVC    = 'food-portal-preview'
-        DH_CREDS       = credentials('dockerhub-creds')
-        KUBECONFIG     = credentials('kubeconfig-creds')
+        DH_CREDS       = credentials('docker')
+        KUBECONFIG     = credentials('kubeconfig')
     }
 
     stages {

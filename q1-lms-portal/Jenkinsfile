@@ -29,14 +29,14 @@ pipeline {
     }
 
     environment {
-        GIT_URL        = 'https://github.com/YOUR_GITHUB_USERNAME/devops-assessment.git'
-        DOCKERHUB_USER = 'YOUR_DOCKERHUB_USERNAME'
+        GIT_URL        = 'https://github.com/M123ukta/DevOps-Kuber2'
+        DOCKERHUB_USER = 'muktamotwani'
         APP_DIR        = 'q1-lms-portal'
         APP_NAME       = 'lms-portal'
         IMAGE_REPO     = "${DOCKERHUB_USER}/lms-portal"
         VERSION        = "v${BUILD_NUMBER}"
-        DH_CREDS       = credentials('dockerhub-creds')      // DH_CREDS_USR / DH_CREDS_PSW
-        KUBECONFIG     = credentials('kubeconfig-creds')     // path to kubeconfig file
+        DH_CREDS       = credentials('dockerhub')      // DH_CREDS_USR / DH_CREDS_PSW
+        KUBECONFIG     = credentials('kubeconfig')     // path to kubeconfig file
     }
 
     stages {
