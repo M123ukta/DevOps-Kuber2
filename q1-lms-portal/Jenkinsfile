@@ -7,7 +7,7 @@
 //   kubeconfig-creds : Secret file              (kubeconfig of Docker Desktop)
 // ---------------------------------------------------------------------------
 
-def run(String c)   { if (isUnix()) { sh c } else { bat "@echo off\n${c}" } }
+def runCmd(String c)   { if (isUnix()) { sh c } else { bat "@echo off\n${c}" } }
 def v(String name)  { return isUnix() ? "\$${name}" : "%${name}%" }   // shell variable syntax
 
 pipeline {
@@ -35,7 +35,7 @@ pipeline {
         APP_NAME       = 'lms-portal'
         IMAGE_REPO     = "${DOCKERHUB_USER}/lms-portal"
         VERSION        = "v${BUILD_NUMBER}"
-        DH_CREDS       = credentials('dockerhub')      // DH_CREDS_USR / DH_CREDS_PSW
+        DH_CREDS       = credentials('docker')      // DH_CREDS_USR / DH_CREDS_PSW
         KUBECONFIG     = credentials('kubeconfig')     // path to kubeconfig file
     }
 
@@ -49,7 +49,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {
-                    run("docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} -t ${IMAGE_REPO}:latest .")
+                    runCmd("docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} -t ${IMAGE_REPO}:latest .")
                 }
             }
         }
@@ -57,16 +57,16 @@ pipeline {
         stage('Test Image') {
             steps {
                 // Validates the nginx config and that the site files exist inside the image.
-                run("docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t")
-                run("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html")
+                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t")
+                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html")
             }
         }
 
         stage('Push Image to Docker Hub') {
             steps {
-                run("echo ${v('DH_CREDS_PSW')}| docker login -u ${v('DH_CREDS_USR')} --password-stdin")
-                run("docker push ${IMAGE_REPO}:${VERSION}")
-                run("docker push ${IMAGE_REPO}:latest")
+                runCmd("echo ${v('DH_CREDS_PSW')}| docker login -u ${v('DH_CREDS_USR')} --password-stdin")
+                runCmd("docker push ${IMAGE_REPO}:${VERSION}")
+                runCmd("docker push ${IMAGE_REPO}:latest")
             }
         }
 
@@ -77,8 +77,8 @@ pipeline {
                         // Put the new versioned image into the manifest, then apply.
                         def manifest = readFile('deployment.yaml').replaceAll(/image:\s*\S+/, "image: ${IMAGE_REPO}:${VERSION}")
                         writeFile file: 'deployment.rendered.yaml', text: manifest
-                        run('kubectl apply -f service.yaml')
-                        run('kubectl apply -f deployment.rendered.yaml')
+                        runCmd('kubectl apply -f service.yaml')
+                        runCmd('kubectl apply -f deployment.rendered.yaml')
                     }
                 }
             }
@@ -88,12 +88,12 @@ pipeline {
             steps {
                 script {
                     try {
-                        run("kubectl rollout status deployment/${APP_NAME} --timeout=60s")
+                        runCmd("kubectl rollout status deployment/${APP_NAME} --timeout=60s")
                         echo "Release ${VERSION} is healthy."
                     } catch (err) {
                         echo "Release ${VERSION} FAILED its health check. Rolling back to the previous stable release..."
-                        run("kubectl rollout undo deployment/${APP_NAME}")
-                        run("kubectl rollout status deployment/${APP_NAME} --timeout=90s")
+                        runCmd("kubectl rollout undo deployment/${APP_NAME}")
+                        runCmd("kubectl rollout status deployment/${APP_NAME} --timeout=90s")
                         error("Release ${VERSION} failed and was rolled back automatically.")
                     }
                 }
@@ -105,10 +105,10 @@ pipeline {
         always {
             script {
                 try {
-                    run("kubectl get pods -l app=${APP_NAME}")
-                    run("kubectl rollout history deployment/${APP_NAME}")
+                    runCmd("kubectl get pods -l app=${APP_NAME}")
+                    runCmd("kubectl rollout history deployment/${APP_NAME}")
                 } catch (ignored) { echo 'kubectl summary skipped' }
-                try { run('docker logout') } catch (ignored) { }
+                try { runCmd('docker logout') } catch (ignored) { }
             }
         }
         success { echo "Deployed ${VERSION}. Open http://localhost:30010" }

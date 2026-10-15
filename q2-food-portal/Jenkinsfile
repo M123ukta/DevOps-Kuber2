@@ -16,7 +16,7 @@
 //   kubeconfig-creds : Secret file              (kubeconfig of Docker Desktop)
 // ---------------------------------------------------------------------------
 
-def run(String c)  { if (isUnix()) { sh c } else { bat "@echo off\n${c}" } }
+def runCmd(String c)  { if (isUnix()) { sh c } else { bat "@echo off\n${c}" } }
 def st(String c)   { return isUnix() ? sh(returnStatus: true, script: c) : bat(returnStatus: true, script: "@echo off\n${c}") }
 def out(String c)  { return isUnix() ? sh(returnStdout: true, script: c).trim() : bat(returnStdout: true, script: "@echo off\n${c}").trim() }
 def v(String name) { return isUnix() ? "\$${name}" : "%${name}%" }
@@ -59,7 +59,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir("${APP_DIR}") {
-                    run("docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} .")
+                    runCmd("docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} .")
                 }
             }
         }
@@ -67,18 +67,18 @@ pipeline {
         stage('Automated Tests') {
             steps {
                 // Tests run against the built image BEFORE anything is pushed or deployed.
-                run("docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t")
-                run("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html")
-                run("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/style.css")
-                run("docker run --rm ${IMAGE_REPO}:${VERSION} grep -q FoodieHub /usr/share/nginx/html/index.html")
-                run("docker run --rm ${IMAGE_REPO}:${VERSION} grep -q \"Release ${VERSION}\" /usr/share/nginx/html/index.html")
+                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t")
+                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html")
+                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/style.css")
+                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} grep -q FoodieHub /usr/share/nginx/html/index.html")
+                runCmd("docker run --rm ${IMAGE_REPO}:${VERSION} grep -q \"Release ${VERSION}\" /usr/share/nginx/html/index.html")
             }
         }
 
         stage('Push Image to Docker Hub') {
             steps {
-                run("echo ${v('DH_CREDS_PSW')}| docker login -u ${v('DH_CREDS_USR')} --password-stdin")
-                run("docker push ${IMAGE_REPO}:${VERSION}")
+                runCmd("echo ${v('DH_CREDS_PSW')}| docker login -u ${v('DH_CREDS_USR')} --password-stdin")
+                runCmd("docker push ${IMAGE_REPO}:${VERSION}")
             }
         }
 
@@ -88,8 +88,8 @@ pipeline {
                     script {
                         if (st("kubectl get svc ${LIVE_SVC}") != 0) {
                             echo 'First deployment: creating live and preview services. BLUE becomes the first live colour.'
-                            run('kubectl apply -f service-live.yaml')
-                            run('kubectl apply -f service-preview.yaml')
+                            runCmd('kubectl apply -f service-live.yaml')
+                            runCmd('kubectl apply -f service-preview.yaml')
                             env.ACTIVE = 'none'
                             env.IDLE   = 'blue'
                         } else {
@@ -108,12 +108,12 @@ pipeline {
                     script {
                         def manifest = readFile("deployment-${env.IDLE}.yaml").replaceAll(/image:\s*\S+/, "image: ${IMAGE_REPO}:${VERSION}")
                         writeFile file: "deployment-${env.IDLE}.rendered.yaml", text: manifest
-                        run("kubectl apply -f deployment-${env.IDLE}.rendered.yaml")
+                        runCmd("kubectl apply -f deployment-${env.IDLE}.rendered.yaml")
                         try {
-                            run("kubectl rollout status deployment/food-portal-${env.IDLE} --timeout=90s")
+                            runCmd("kubectl rollout status deployment/food-portal-${env.IDLE} --timeout=90s")
                         } catch (err) {
                             echo "New release ${VERSION} FAILED on ${env.IDLE}. Live traffic is untouched and still served by ${env.ACTIVE}."
-                            run("kubectl scale deployment/food-portal-${env.IDLE} --replicas=0")
+                            runCmd("kubectl scale deployment/food-portal-${env.IDLE} --replicas=0")
                             error("Release ${VERSION} failed health checks on ${env.IDLE}; ${env.ACTIVE} remains live.")
                         }
                     }
@@ -125,8 +125,8 @@ pipeline {
             steps {
                 script {
                     // Point the preview service at the idle colour and smoke-test it inside the cluster.
-                    run("kubectl set selector svc/${PREVIEW_SVC} app=food-portal,version=${env.IDLE}")
-                    run("kubectl run smoke-${BUILD_NUMBER} --rm -i --restart=Never --image=curlimages/curl:8.8.0 -- curl -sf http://${PREVIEW_SVC}/health.html")
+                    runCmd("kubectl set selector svc/${PREVIEW_SVC} app=food-portal,version=${env.IDLE}")
+                    runCmd("kubectl run smoke-${BUILD_NUMBER} --rm -i --restart=Never --image=curlimages/curl:8.8.0 -- curl -sf http://${PREVIEW_SVC}/health.html")
                     echo "Preview is healthy. Open http://localhost:30021 to inspect ${env.IDLE} before it goes live."
                 }
             }
@@ -138,7 +138,7 @@ pipeline {
                     if (!params.AUTO_PROMOTE) {
                         input message: "Preview (http://localhost:30021) looks good? Switch live traffic to ${env.IDLE}?", ok: 'Promote to live'
                     }
-                    run("kubectl set selector svc/${LIVE_SVC} app=food-portal,version=${env.IDLE}")
+                    runCmd("kubectl set selector svc/${LIVE_SVC} app=food-portal,version=${env.IDLE}")
                     echo "Live traffic now goes to ${env.IDLE} (${VERSION})."
                 }
             }
@@ -148,11 +148,11 @@ pipeline {
             steps {
                 script {
                     try {
-                        run("kubectl run verify-${BUILD_NUMBER} --rm -i --restart=Never --image=curlimages/curl:8.8.0 -- curl -sf http://${LIVE_SVC}/health.html")
+                        runCmd("kubectl run verify-${BUILD_NUMBER} --rm -i --restart=Never --image=curlimages/curl:8.8.0 -- curl -sf http://${LIVE_SVC}/health.html")
                         echo "Live site verified on ${env.IDLE}. ${env.ACTIVE} is kept running for instant rollback."
                     } catch (err) {
                         if (env.ACTIVE != 'none') {
-                            run("kubectl set selector svc/${LIVE_SVC} app=food-portal,version=${env.ACTIVE}")
+                            runCmd("kubectl set selector svc/${LIVE_SVC} app=food-portal,version=${env.ACTIVE}")
                         }
                         error("Live verification failed. Traffic switched back to ${env.ACTIVE}.")
                     }
@@ -165,11 +165,11 @@ pipeline {
         always {
             script {
                 try {
-                    run('kubectl get deployments -l app=food-portal')
-                    run('kubectl get pods -l app=food-portal')
-                    run('kubectl get svc')
+                    runCmd('kubectl get deployments -l app=food-portal')
+                    runCmd('kubectl get pods -l app=food-portal')
+                    runCmd('kubectl get svc')
                 } catch (ignored) { echo 'kubectl summary skipped' }
-                try { run('docker logout') } catch (ignored) { }
+                try { runCmd('docker logout') } catch (ignored) { }
             }
         }
         success { echo "Release ${VERSION} is live on ${env.IDLE}: http://localhost:30020" }
