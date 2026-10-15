@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: food-portal-green
+  labels:
+    app: food-portal
+    version: green
+spec:
+  replicas: 3
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 60
+  minReadySeconds: 3
+  selector:
+    matchLabels:
+      app: food-portal
+      version: green
+  template:
+    metadata:
+      labels:
+        app: food-portal
+        version: green
+    spec:
+      containers:
+        - name: food-portal
+          image: YOUR_DOCKERHUB_USERNAME/food-portal:v2
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health.html
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /index.html
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

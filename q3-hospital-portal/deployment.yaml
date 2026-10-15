@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hospital-portal
+  labels:
+    app: hospital-portal
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5          # keep old ReplicaSets so "rollout undo" works
+  progressDeadlineSeconds: 60      # rollout is marked failed if not ready in 60s
+  minReadySeconds: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0            # old pods keep serving until new ones are Ready
+  selector:
+    matchLabels:
+      app: hospital-portal
+  template:
+    metadata:
+      labels:
+        app: hospital-portal
+    spec:
+      containers:
+        - name: hospital-portal
+          image: YOUR_DOCKERHUB_USERNAME/hospital-portal:v1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health.html
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /index.html
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

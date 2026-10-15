@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="EduSphere University Learning Management Portal: courses, faculty, resources, assignments and exam schedules.">
+  <title>EduSphere University | Learning Management Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="EduSphere home"><span class="logo">🎓</span> EduSphere</a>
+      <nav aria-label="Primary">
+        <a href="#courses">Courses</a>
+        <a href="#faculty">Faculty</a>
+        <a href="#resources">Resources</a>
+        <a href="#announcements">Assignments</a>
+        <a href="#exams">Exams</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="container hero-grid">
+      <div>
+        <span class="pill">Autumn Semester 2026</span>
+        <h1>Learn smarter.<br>Stay on track.</h1>
+        <p class="lead">One place for your courses, faculty, study material, assignment deadlines and examination schedule.</p>
+        <div class="cta">
+          <a class="btn primary" href="#courses">Browse Courses</a>
+          <a class="btn ghost" href="#exams">View Exam Schedule</a>
+        </div>
+      </div>
+      <ul class="stats" aria-label="University statistics">
+        <li><strong>48</strong><span>Courses</span></li>
+        <li><strong>120+</strong><span>Faculty</span></li>
+        <li><strong>15k</strong><span>Learners</span></li>
+        <li><strong>24/7</strong><span>Resources</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <main id="main">
+    <!-- COURSES -->
+    <section class="section" id="courses">
+      <div class="container">
+        <h2>Course Information</h2>
+        <p class="sub">Your enrolled courses this semester and current progress.</p>
+        <div class="grid cols-3">
+          <article class="card course">
+            <span class="tag indigo">CSE3001</span>
+            <h3>Data Structures &amp; Algorithms</h3>
+            <p>Arrays, trees, graphs, hashing and complexity analysis with weekly problem sets.</p>
+            <div class="meta"><span>4 Credits</span><span>Semester 3</span></div>
+            <div class="progress" role="progressbar" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100"><span style="width:72%"></span></div>
+            <small>72% complete</small>
+          </article>
+          <article class="card course">
+            <span class="tag teal">CSE3005</span>
+            <h3>Database Management Systems</h3>
+            <p>Relational modelling, SQL, normalization, transactions and indexing.</p>
+            <div class="meta"><span>4 Credits</span><span>Semester 3</span></div>
+            <div class="progress" role="progressbar" aria-valuenow="58" aria-valuemin="0" aria-valuemax="100"><span style="width:58%"></span></div>
+            <small>58% complete</small>
+          </article>
+          <article class="card course">
+            <span class="tag pink">ISWE406</span>
+            <h3>Agile Development &amp; DevOps</h3>
+            <p>Git, Docker, Kubernetes and Jenkins CI/CD pipelines for modern delivery.</p>
+            <div class="meta"><span>3 Credits</span><span>Semester 4</span></div>
+            <div class="progress" role="progressbar" aria-valuenow="81" aria-valuemin="0" aria-valuemax="100"><span style="width:81%"></span></div>
+            <small>81% complete</small>
+          </article>
+          <article class="card course">
+            <span class="tag amber">CSE3012</span>
+            <h3>Computer Networks</h3>
+            <p>Layered architecture, routing, TCP/IP, application protocols and network security.</p>
+            <div class="meta"><span>4 Credits</span><span>Semester 4</span></div>
+            <div class="progress" role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"><span style="width:45%"></span></div>
+            <small>45% complete</small>
+          </article>
+          <article class="card course">
+            <span class="tag indigo">MAT2002</span>
+            <h3>Probability &amp; Statistics</h3>
+            <p>Distributions, hypothesis testing, regression and statistical inference.</p>
+            <div class="meta"><span>3 Credits</span><span>Semester 3</span></div>
+            <div class="progress" role="progressbar" aria-valuenow="66" aria-valuemin="0" aria-valuemax="100"><span style="width:66%"></span></div>
+            <small>66% complete</small>
+          </article>
+          <article class="card course">
+            <span class="tag teal">CSE4020</span>
+            <h3>Machine Learning</h3>
+            <p>Supervised and unsupervised learning, model evaluation and mini projects.</p>
+            <div class="meta"><span>4 Credits</span><span>Semester 5</span></div>
+            <div class="progress" role="progressbar" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"><span style="width:33%"></span></div>
+            <small>33% complete</small>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FACULTY -->
+    <section class="section alt" id="faculty">
+      <div class="container">
+        <h2>Faculty Profiles</h2>
+        <p class="sub">Learn from experienced educators and researchers.</p>
+        <div class="grid cols-4">
+          <article class="card faculty">
+            <div class="avatar a1" aria-hidden="true">AR</div>
+            <h3>Dr. Anita Rao</h3>
+            <p class="role">Professor, Computer Science</p>
+            <p>Algorithms, Graph Theory</p>
+            <a href="mailto:anita.rao@edusphere.edu">anita.rao@edusphere.edu</a>
+          </article>
+          <article class="card faculty">
+            <div class="avatar a2" aria-hidden="true">VK</div>
+            <h3>Dr. Vikram Khanna</h3>
+            <p class="role">Associate Professor, Databases</p>
+            <p>Query Optimization, Big Data</p>
+            <a href="mailto:vikram.khanna@edusphere.edu">vikram.khanna@edusphere.edu</a>
+          </article>
+          <article class="card faculty">
+            <div class="avatar a3" aria-hidden="true">SN</div>
+            <h3>Prof. Sneha Nair</h3>
+            <p class="role">Assistant Professor, DevOps</p>
+            <p>CI/CD, Containers, Cloud Native</p>
+            <a href="mailto:sneha.nair@edusphere.edu">sneha.nair@edusphere.edu</a>
+          </article>
+          <article class="card faculty">
+            <div class="avatar a4" aria-hidden="true">RM</div>
+            <h3>Dr. Rahul Menon</h3>
+            <p class="role">Professor, Networks &amp; Security</p>
+            <p>Network Security, IoT</p>
+            <a href="mailto:rahul.menon@edusphere.edu">rahul.menon@edusphere.edu</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESOURCES -->
+    <section class="section" id="resources">
+      <div class="container">
+        <h2>Learning Resources</h2>
+        <p class="sub">Everything you need to study, practise and revise.</p>
+        <div class="grid cols-3">
+          <a class="card resource" href="#resources"><span class="ico">📘</span><div><h3>Lecture Notes</h3><p>Slide decks and handwritten notes for every module.</p></div></a>
+          <a class="card resource" href="#resources"><span class="ico">🎥</span><div><h3>Video Lectures</h3><p>Recorded classes with searchable transcripts.</p></div></a>
+          <a class="card resource" href="#resources"><span class="ico">📚</span><div><h3>E-Library</h3><p>Textbooks, journals and reference material.</p></div></a>
+          <a class="card resource" href="#resources"><span class="ico">🧪</span><div><h3>Virtual Labs</h3><p>Hands-on practice with guided lab manuals.</p></div></a>
+          <a class="card resource" href="#resources"><span class="ico">📝</span><div><h3>Question Papers</h3><p>Previous year papers with solution keys.</p></div></a>
+          <a class="card resource" href="#resources"><span class="ico">💬</span><div><h3>Discussion Forum</h3><p>Ask doubts and learn together with peers.</p></div></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ASSIGNMENTS / ANNOUNCEMENTS -->
+    <section class="section alt" id="announcements">
+      <div class="container">
+        <h2>Assignment Announcements</h2>
+        <p class="sub">Upcoming deadlines and important notices.</p>
+        <ul class="timeline">
+          <li>
+            <div class="date"><strong>20</strong><span>Nov</span></div>
+            <div class="body"><h3>DevOps Lab: CI/CD Pipeline Submission <span class="badge urgent">Due Soon</span></h3><p>Submit your Jenkinsfile, Dockerfile and Kubernetes manifests with screenshots.</p></div>
+          </li>
+          <li>
+            <div class="date"><strong>25</strong><span>Nov</span></div>
+            <div class="body"><h3>DBMS Assignment 3: Normalization <span class="badge open">Open</span></h3><p>Normalize the given schema up to BCNF and justify each decomposition.</p></div>
+          </li>
+          <li>
+            <div class="date"><strong>29</strong><span>Nov</span></div>
+            <div class="body"><h3>DSA Problem Set 5: Graph Algorithms <span class="badge open">Open</span></h3><p>Solve any 6 of 8 problems and upload your code to the portal.</p></div>
+          </li>
+          <li>
+            <div class="date"><strong>03</strong><span>Dec</span></div>
+            <div class="body"><h3>Networks Mini Project Demo <span class="badge info">Scheduled</span></h3><p>Demo slots are allotted by roll number. Check the slot sheet.</p></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- EXAMS -->
+    <section class="section" id="exams">
+      <div class="container">
+        <h2>Examination Schedule</h2>
+        <p class="sub">Final examinations, December 2026. Carry your ID card to the hall.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Course Code</th><th>Course</th><th>Date</th><th>Time</th><th>Venue</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>CSE3001</td><td>Data Structures &amp; Algorithms</td><td>10 Dec 2026</td><td>09:30 AM – 12:30 PM</td><td>Block A, Hall 101</td></tr>
+              <tr><td>CSE3005</td><td>Database Management Systems</td><td>12 Dec 2026</td><td>09:30 AM – 12:30 PM</td><td>Block A, Hall 102</td></tr>
+              <tr><td>ISWE406</td><td>Agile Development &amp; DevOps</td><td>14 Dec 2026</td><td>02:00 PM – 05:00 PM</td><td>Lab Complex, L49</td></tr>
+              <tr><td>CSE3012</td><td>Computer Networks</td><td>16 Dec 2026</td><td>09:30 AM – 12:30 PM</td><td>Block B, Hall 204</td></tr>
+              <tr><td>MAT2002</td><td>Probability &amp; Statistics</td><td>18 Dec 2026</td><td>02:00 PM – 05:00 PM</td><td>Block B, Hall 205</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container foot">
+      <p>© 2026 EduSphere University · Learning Management Portal</p>
+      <p><span class="release">Release __VERSION__</span></p>
+    </div>
+  </footer>
+</body>
+</html>

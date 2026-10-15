@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FoodieHub online food ordering portal: restaurant details, categories, menu, prices, availability and offers.">
+  <title>FoodieHub | Online Food Ordering Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#menu">Skip to menu</a>
+
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#top"><span class="logo">🍽️</span> FoodieHub</a>
+      <nav aria-label="Primary">
+        <a href="#restaurant">Restaurant</a>
+        <a href="#offers">Offers</a>
+        <a href="#menu">Menu</a>
+      </nav>
+      <button class="cart" id="cartBtn" type="button" aria-live="polite">🛒 Cart <span id="cartCount">0</span></button>
+    </div>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="container hero-inner">
+      <span class="chip-hero">🔥 Free delivery on orders above ₹499</span>
+      <h1>Hungry? We deliver<br><em>happiness</em> in 30 minutes.</h1>
+      <p>Fresh, hot and tasty food from the best kitchens in town, right at your door.</p>
+      <a class="btn" href="#menu">Order Now</a>
+    </div>
+  </section>
+
+  <main>
+    <!-- RESTAURANT DETAILS -->
+    <section class="section" id="restaurant">
+      <div class="container">
+        <div class="resto card">
+          <div class="resto-main">
+            <div class="resto-img" aria-hidden="true">🍛</div>
+            <div>
+              <h2>Spice Route Kitchen</h2>
+              <p class="cuisine">North Indian · Chinese · Italian · Desserts</p>
+              <p class="addr">📍 24, Residency Road, Bengaluru, Karnataka</p>
+            </div>
+          </div>
+          <ul class="resto-facts">
+            <li><strong>⭐ 4.6</strong><span>2.3k ratings</span></li>
+            <li><strong>🕒 30 min</strong><span>Avg. delivery</span></li>
+            <li><strong>💰 ₹300</strong><span>For two</span></li>
+            <li><strong class="open">● Open now</strong><span>10 AM – 11 PM</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- OFFERS -->
+    <section class="section tight" id="offers">
+      <div class="container">
+        <h2>Promotional Offers</h2>
+        <div class="offers">
+          <div class="offer o1"><span class="pct">40% OFF</span><p>On your first order up to ₹100</p><code>WELCOME40</code></div>
+          <div class="offer o2"><span class="pct">₹150 OFF</span><p>On orders above ₹799 using UPI</p><code>UPI150</code></div>
+          <div class="offer o3"><span class="pct">BUY 1 GET 1</span><p>On all pizzas every Tuesday</p><code>PIZZA2X</code></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MENU -->
+    <section class="section" id="menu">
+      <div class="container">
+        <h2>Menu</h2>
+        <p class="sub">Browse by category and add your favourites to the cart.</p>
+
+        <div class="filters" role="tablist" aria-label="Food categories">
+          <button class="filter active" data-filter="all" type="button">All</button>
+          <button class="filter" data-filter="starters" type="button">🥗 Starters</button>
+          <button class="filter" data-filter="mains" type="button">🍛 Main Course</button>
+          <button class="filter" data-filter="pizza" type="button">🍕 Pizza</button>
+          <button class="filter" data-filter="desserts" type="button">🍰 Desserts</button>
+          <button class="filter" data-filter="drinks" type="button">🥤 Drinks</button>
+        </div>
+
+        <div class="menu-grid" id="menuGrid">
+          <article class="item" data-cat="starters">
+            <div class="thumb">🥟</div>
+            <div class="info"><h3><i class="veg"></i>Veg Spring Rolls</h3><p>Crispy rolls stuffed with seasoned vegetables.</p></div>
+            <div class="foot"><span class="price">₹149</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="starters">
+            <div class="thumb">🍗</div>
+            <div class="info"><h3><i class="nonveg"></i>Chicken 65</h3><p>Spicy, deep-fried South Indian style chicken bites.</p></div>
+            <div class="foot"><span class="price">₹229</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="mains">
+            <div class="thumb">🍛</div>
+            <div class="info"><h3><i class="veg"></i>Paneer Butter Masala</h3><p>Soft paneer in a rich, creamy tomato gravy.</p></div>
+            <div class="foot"><span class="price">₹259</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="mains">
+            <div class="thumb">🍚</div>
+            <div class="info"><h3><i class="nonveg"></i>Hyderabadi Chicken Biryani</h3><p>Long-grain basmati layered with spiced chicken, served with raita.</p></div>
+            <div class="foot"><span class="price">₹299</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="mains">
+            <div class="thumb">🍜</div>
+            <div class="info"><h3><i class="veg"></i>Veg Hakka Noodles</h3><p>Wok-tossed noodles with crunchy vegetables.</p></div>
+            <div class="foot"><span class="price">₹189</span><span class="stock low">Only 3 left</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="pizza">
+            <div class="thumb">🍕</div>
+            <div class="info"><h3><i class="veg"></i>Margherita Pizza</h3><p>Classic tomato, mozzarella and fresh basil.</p></div>
+            <div class="foot"><span class="price">₹249</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="pizza">
+            <div class="thumb">🍕</div>
+            <div class="info"><h3><i class="nonveg"></i>Pepperoni Feast</h3><p>Loaded with pepperoni and extra cheese.</p></div>
+            <div class="foot"><span class="price">₹349</span><span class="stock out">Sold out</span><button class="add" type="button" disabled>Add</button></div>
+          </article>
+          <article class="item" data-cat="desserts">
+            <div class="thumb">🍫</div>
+            <div class="info"><h3><i class="veg"></i>Chocolate Lava Cake</h3><p>Warm cake with a gooey molten chocolate centre.</p></div>
+            <div class="foot"><span class="price">₹129</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="desserts">
+            <div class="thumb">🍨</div>
+            <div class="info"><h3><i class="veg"></i>Gulab Jamun (2 pcs)</h3><p>Soft milk dumplings soaked in saffron syrup.</p></div>
+            <div class="foot"><span class="price">₹89</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="drinks">
+            <div class="thumb">🥭</div>
+            <div class="info"><h3><i class="veg"></i>Mango Lassi</h3><p>Thick, chilled yoghurt drink with Alphonso mango.</p></div>
+            <div class="foot"><span class="price">₹99</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="drinks">
+            <div class="thumb">🍋</div>
+            <div class="info"><h3><i class="veg"></i>Fresh Lime Soda</h3><p>Sweet or salted, freshly made and fizzy.</p></div>
+            <div class="foot"><span class="price">₹69</span><span class="stock in">Available</span><button class="add" type="button">Add</button></div>
+          </article>
+          <article class="item" data-cat="drinks">
+            <div class="thumb">☕</div>
+            <div class="info"><h3><i class="veg"></i>Cold Coffee</h3><p>Creamy blended coffee topped with chocolate.</p></div>
+            <div class="foot"><span class="price">₹119</span><span class="stock out">Sold out</span><button class="add" type="button" disabled>Add</button></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADD-NEW-FEATURE-HERE -->
+  </main>
+
+  <footer class="footer">
+    <div class="container foot-row">
+      <p>© 2026 FoodieHub · Order food online</p>
+      <p><span class="release">Release __VERSION__</span></p>
+    </div>
+  </footer>
+
+  <script>
+    // Category filter
+    var filters = document.querySelectorAll('.filter');
+    var items = document.querySelectorAll('.item');
+    filters.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        filters.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var f = btn.getAttribute('data-filter');
+        items.forEach(function (it) {
+          it.style.display = (f === 'all' || it.getAttribute('data-cat') === f) ? '' : 'none';
+        });
+      });
+    });
+    // Cart counter
+    var count = 0;
+    var counter = document.getElementById('cartCount');
+    document.querySelectorAll('.add').forEach(function (b) {
+      b.addEventListener('click', function () {
+        count++; counter.textContent = count;
+        b.textContent = 'Added ✓';
+        setTimeout(function () { b.textContent = 'Add'; }, 900);
+      });
+    });
+  </script>
+</body>
+</html>

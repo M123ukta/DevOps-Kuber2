@@ -1,0 +1,17 @@
+# PREVIEW service: the team validates the new (idle) colour here before it
+# receives real traffic. Selector points at green; the pipeline keeps it on the idle colour.
+apiVersion: v1
+kind: Service
+metadata:
+  name: food-portal-preview
+  labels:
+    app: food-portal
+spec:
+  type: NodePort
+  selector:
+    app: food-portal
+    version: green
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30021

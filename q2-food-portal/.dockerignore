@@ -1,0 +1,4 @@
+Jenkinsfile
+*.yaml
+*.md
+.git

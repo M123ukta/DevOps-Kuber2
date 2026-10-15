@@ -1,0 +1,122 @@
+// ---------------------------------------------------------------------------
+// Q3 - Hospital Appointment Portal : full CI/CD with automatic rollback
+// GitHub -> Jenkins -> Docker -> Docker Hub -> Kubernetes (3 replicas, NodePort 30030)
+// Works on Jenkins running on Linux (sh) or Windows (bat).
+// Jenkins credentials required:
+//   dockerhub-creds  : Username with password   (Docker Hub)
+//   kubeconfig-creds : Secret file              (kubeconfig of Docker Desktop)
+// ---------------------------------------------------------------------------
+
+def run(String c)   { if (isUnix()) { sh c } else { bat "@echo off\n${c}" } }
+def v(String name)  { return isUnix() ? "\$${name}" : "%${name}%" }
+
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    // Every modification committed to GitHub re-triggers the pipeline (polled every ~2 min).
+    triggers { pollSCM('H/2 * * * *') }
+
+    parameters {
+        booleanParam(name: 'FAULTY_RELEASE', defaultValue: false,
+                     description: 'Tick to deploy a deliberately faulty release and watch the automatic rollback')
+    }
+
+    environment {
+        GIT_URL        = 'https://github.com/YOUR_GITHUB_USERNAME/devops-assessment.git'
+        DOCKERHUB_USER = 'YOUR_DOCKERHUB_USERNAME'
+        APP_DIR        = 'q3-hospital-portal'
+        APP_NAME       = 'hospital-portal'
+        IMAGE_REPO     = "${DOCKERHUB_USER}/hospital-portal"
+        VERSION        = "v${BUILD_NUMBER}"
+        DH_CREDS       = credentials('dockerhub-creds')
+        KUBECONFIG     = credentials('kubeconfig-creds')
+    }
+
+    stages {
+        // 1. Clone the application from GitHub
+        stage('Clone Code') {
+            steps {
+                git branch: 'main', url: "${GIT_URL}"
+            }
+        }
+
+        // 2. Build the image using the Dockerfile
+        stage('Build Docker Image') {
+            steps {
+                dir("${APP_DIR}") {
+                    run("docker build --build-arg APP_VERSION=${VERSION} --build-arg FAULTY=${params.FAULTY_RELEASE} -t ${IMAGE_REPO}:${VERSION} -t ${IMAGE_REPO}:latest .")
+                }
+            }
+        }
+
+        // 3. Verify the image was built successfully
+        stage('Test Application') {
+            steps {
+                run("docker image inspect ${IMAGE_REPO}:${VERSION}")
+                run("docker run --rm ${IMAGE_REPO}:${VERSION} nginx -t")
+                run("docker run --rm ${IMAGE_REPO}:${VERSION} test -f /usr/share/nginx/html/index.html")
+            }
+        }
+
+        // 4. Authenticate with Docker Hub and push
+        stage('Push Image') {
+            steps {
+                run("echo ${v('DH_CREDS_PSW')}| docker login -u ${v('DH_CREDS_USR')} --password-stdin")
+                run("docker push ${IMAGE_REPO}:${VERSION}")
+                run("docker push ${IMAGE_REPO}:latest")
+            }
+        }
+
+        // 5/6. Deploy with kubectl: Deployment (3 replicas) + NodePort Service
+        stage('Deploy to Kubernetes') {
+            steps {
+                dir("${APP_DIR}") {
+                    script {
+                        def manifest = readFile('deployment.yaml').replaceAll(/image:\s*\S+/, "image: ${IMAGE_REPO}:${VERSION}")
+                        writeFile file: 'deployment.rendered.yaml', text: manifest
+                        run('kubectl apply -f service.yaml')
+                        run('kubectl apply -f deployment.rendered.yaml')
+                    }
+                }
+            }
+        }
+
+        // Health check + automatic rollback to the previous stable release
+        stage('Verify Rollout & Auto Rollback') {
+            steps {
+                script {
+                    try {
+                        run("kubectl rollout status deployment/${APP_NAME} --timeout=60s")
+                        echo "Release ${VERSION} is healthy."
+                    } catch (err) {
+                        echo "Release ${VERSION} FAILED its health check. Rolling back to the previous stable release..."
+                        run("kubectl rollout undo deployment/${APP_NAME}")
+                        run("kubectl rollout status deployment/${APP_NAME} --timeout=90s")
+                        error("Release ${VERSION} failed and was rolled back automatically.")
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                try {
+                    run("kubectl get pods -l app=${APP_NAME}")
+                    run("kubectl get svc hospital-portal-service")
+                    run("kubectl rollout history deployment/${APP_NAME}")
+                } catch (ignored) { echo 'kubectl summary skipped' }
+                try { run('docker logout') } catch (ignored) { }
+            }
+        }
+        success { echo "Deployed ${VERSION}. Open http://localhost:30030" }
+        failure { echo 'Pipeline failed - see the stage logs above. Previous stable release is serving traffic.' }
+    }
+}

@@ -1,0 +1,17 @@
+# LIVE service: real users hit this one. Switching the "version" selector
+# between blue and green is the blue-green traffic cut-over.
+apiVersion: v1
+kind: Service
+metadata:
+  name: food-portal-live
+  labels:
+    app: food-portal
+spec:
+  type: NodePort
+  selector:
+    app: food-portal
+    version: blue
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30020

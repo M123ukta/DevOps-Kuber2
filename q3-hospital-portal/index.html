@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CityCare Hospital online appointment portal: doctors, specializations, consultation timings, available slots and announcements.">
+  <title>CityCare Hospital | Online Appointment Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <div class="emergency">🚑 24×7 Emergency: <a href="tel:108">108</a> · Hospital Helpline: <a href="tel:+9144000000">+91 44 0000 0000</a></div>
+
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#top"><span class="logo">✚</span> CityCare</a>
+      <nav aria-label="Primary">
+        <a href="#doctors">Doctors</a>
+        <a href="#specializations">Specializations</a>
+        <a href="#timings">Timings</a>
+        <a href="#slots">Book Slot</a>
+        <a href="#announcements">Announcements</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" id="top">
+    <div class="container hero-grid">
+      <div>
+        <span class="pill">Trusted care since 1998</span>
+        <h1>Your health,<br>our <span>priority</span>.</h1>
+        <p class="lead">Find the right specialist, check consultation timings and book an appointment slot in a few clicks.</p>
+        <div class="cta">
+          <a class="btn primary" href="#slots">Book Appointment</a>
+          <a class="btn ghost" href="#doctors">Meet our Doctors</a>
+        </div>
+      </div>
+      <ul class="stats" aria-label="Hospital statistics">
+        <li><strong>60+</strong><span>Specialist doctors</span></li>
+        <li><strong>350</strong><span>Beds</span></li>
+        <li><strong>25</strong><span>Years of care</span></li>
+        <li><strong>4.8★</strong><span>Patient rating</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <main id="main">
+    <!-- DOCTORS -->
+    <section class="section" id="doctors">
+      <div class="container">
+        <h2>Doctor Profiles</h2>
+        <p class="sub">Experienced specialists dedicated to your well-being.</p>
+        <div class="grid cols-4" id="doctorGrid">
+          <article class="card doctor">
+            <div class="avatar d1" aria-hidden="true">MI</div>
+            <h3>Dr. Meera Iyer</h3>
+            <p class="spec">Cardiologist</p>
+            <p>MD, DM (Cardiology) · 18 yrs experience</p>
+            <span class="badge ok">Available today</span>
+          </article>
+          <article class="card doctor">
+            <div class="avatar d2" aria-hidden="true">AK</div>
+            <h3>Dr. Arjun Kapoor</h3>
+            <p class="spec">Neurologist</p>
+            <p>MD, DM (Neurology) · 14 yrs experience</p>
+            <span class="badge ok">Available today</span>
+          </article>
+          <article class="card doctor">
+            <div class="avatar d3" aria-hidden="true">PS</div>
+            <h3>Dr. Priya Sharma</h3>
+            <p class="spec">Pediatrician</p>
+            <p>MD (Pediatrics) · 11 yrs experience</p>
+            <span class="badge busy">Next: Tomorrow</span>
+          </article>
+          <article class="card doctor">
+            <div class="avatar d4" aria-hidden="true">RN</div>
+            <h3>Dr. Rohan Nair</h3>
+            <p class="spec">Orthopedic Surgeon</p>
+            <p>MS (Ortho) · 16 yrs experience</p>
+            <span class="badge ok">Available today</span>
+          </article>
+          <!-- ADD-NEW-DOCTOR-HERE -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SPECIALIZATIONS -->
+    <section class="section alt" id="specializations">
+      <div class="container">
+        <h2>Medical Specializations</h2>
+        <p class="sub">Comprehensive care under one roof.</p>
+        <div class="grid cols-6">
+          <div class="spec-card"><span>❤️</span>Cardiology</div>
+          <div class="spec-card"><span>🧠</span>Neurology</div>
+          <div class="spec-card"><span>🧒</span>Pediatrics</div>
+          <div class="spec-card"><span>🦴</span>Orthopedics</div>
+          <div class="spec-card"><span>👁️</span>Ophthalmology</div>
+          <div class="spec-card"><span>🦷</span>Dental Care</div>
+          <div class="spec-card"><span>🩺</span>General Medicine</div>
+          <div class="spec-card"><span>🤰</span>Gynecology</div>
+          <div class="spec-card"><span>🧴</span>Dermatology</div>
+          <div class="spec-card"><span>🫁</span>Pulmonology</div>
+          <div class="spec-card"><span>🧬</span>Oncology</div>
+          <div class="spec-card"><span>🧘</span>Psychiatry</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIMINGS -->
+    <section class="section" id="timings">
+      <div class="container">
+        <h2>Consultation Timings</h2>
+        <p class="sub">OPD consultations are by appointment. Please arrive 10 minutes early.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Doctor</th><th>Specialization</th><th>Days</th><th>Morning</th><th>Evening</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Dr. Meera Iyer</td><td>Cardiology</td><td>Mon – Sat</td><td>09:00 – 13:00</td><td>16:00 – 18:00</td></tr>
+              <tr><td>Dr. Arjun Kapoor</td><td>Neurology</td><td>Mon, Wed, Fri</td><td>10:00 – 14:00</td><td>—</td></tr>
+              <tr><td>Dr. Priya Sharma</td><td>Pediatrics</td><td>Mon – Sat</td><td>09:30 – 13:30</td><td>17:00 – 19:00</td></tr>
+              <tr><td>Dr. Rohan Nair</td><td>Orthopedics</td><td>Tue, Thu, Sat</td><td>11:00 – 15:00</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLOTS -->
+    <section class="section alt" id="slots">
+      <div class="container">
+        <h2>Available Appointment Slots</h2>
+        <p class="sub">Select a slot to preview your appointment. Greyed-out slots are already booked.</p>
+        <div class="slot-panel card">
+          <div class="slot-head">
+            <div><strong>Dr. Meera Iyer</strong> · Cardiology</div>
+            <div class="date-chip">📅 Tomorrow</div>
+          </div>
+          <div class="slots" id="slots-wrap">
+            <button class="slot" type="button">09:00 AM</button>
+            <button class="slot" type="button" disabled>09:30 AM</button>
+            <button class="slot" type="button">10:00 AM</button>
+            <button class="slot" type="button">10:30 AM</button>
+            <button class="slot" type="button" disabled>11:00 AM</button>
+            <button class="slot" type="button">11:30 AM</button>
+            <button class="slot" type="button">12:00 PM</button>
+            <button class="slot" type="button" disabled>12:30 PM</button>
+            <button class="slot" type="button">04:00 PM</button>
+            <button class="slot" type="button">04:30 PM</button>
+            <button class="slot" type="button">05:00 PM</button>
+            <button class="slot" type="button" disabled>05:30 PM</button>
+          </div>
+          <div class="summary" id="summary" aria-live="polite">Select a time slot to continue.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section class="section" id="announcements">
+      <div class="container">
+        <h2>Hospital Announcements</h2>
+        <p class="sub">Latest updates from CityCare.</p>
+        <ul class="notices" id="noticeList">
+          <li><span class="tag blue">Camp</span><div><h3>Free Heart Health Check-up Camp</h3><p>Join us on 25 Oct, 9 AM – 1 PM. Free ECG and BP screening for all visitors.</p></div></li>
+          <li><span class="tag green">Service</span><div><h3>Online Reports Now Available</h3><p>Download lab and radiology reports from the patient portal within 6 hours.</p></div></li>
+          <li><span class="tag amber">Notice</span><div><h3>OPD Timings on Public Holidays</h3><p>On public holidays, OPD runs 9 AM – 1 PM. Emergency services remain 24×7.</p></div></li>
+          <!-- ADD-NEW-ANNOUNCEMENT-HERE -->
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container foot">
+      <p>© 2026 CityCare Hospital · Online Appointment Portal</p>
+      <p><span class="release">Release __VERSION__</span></p>
+    </div>
+  </footer>
+
+  <script>
+    var buttons = document.querySelectorAll('.slot:not([disabled])');
+    var summary = document.getElementById('summary');
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        buttons.forEach(function (x) { x.classList.remove('selected'); });
+        b.classList.add('selected');
+        summary.textContent = '✅ Appointment preview: Dr. Meera Iyer (Cardiology), tomorrow at ' + b.textContent + '.';
+      });
+    });
+  </script>
+</body>
+</html>
