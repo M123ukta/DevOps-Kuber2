@@ -6,6 +6,31 @@
   <meta name="description" content="FoodieHub online food ordering portal: restaurant details, categories, menu, prices, availability and offers.">
   <title>FoodieHub | Online Food Ordering Portal</title>
   <link rel="stylesheet" href="style.css">
+  <!-- NEW FEATURE (v2): styles for the Customer Ratings & Thank-You section -->
+  <style>
+    .new-badge { display: inline-block; background: #16a34a; color: #fff; font-size: .7rem; font-weight: 700;
+                 padding: 2px 8px; border-radius: 999px; vertical-align: middle; margin-left: 8px; letter-spacing: .5px; }
+    .rating-wrap { display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: center; padding: 24px; }
+    .rating-score { text-align: center; }
+    .rating-score .big { font-size: 3.2rem; font-weight: 800; line-height: 1; }
+    .rating-score .stars { color: #f59e0b; font-size: 1.3rem; margin: 6px 0; }
+    .rating-score small { color: #6b7280; }
+    .bars { list-style: none; margin: 0; padding: 0; }
+    .bars li { display: grid; grid-template-columns: 34px 1fr 44px; gap: 10px; align-items: center; margin: 6px 0; font-size: .9rem; }
+    .bar { height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .bar span { display: block; height: 100%; background: #f59e0b; border-radius: 999px; }
+    .reviews { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+    .review { padding: 16px; }
+    .review p { margin: 6px 0 0; color: #374151; font-size: .95rem; }
+    .review .who { font-weight: 700; }
+    .review .stars { color: #f59e0b; }
+    .thanks { margin-top: 28px; padding: 28px 24px; text-align: center; border-radius: 16px; color: #fff;
+              background: linear-gradient(135deg, #f97316, #e11d48); }
+    .thanks h3 { margin: 0 0 8px; font-size: 1.6rem; }
+    .thanks p { margin: 0; opacity: .95; }
+    .thanks code { background: rgba(255,255,255,.2); padding: 2px 8px; border-radius: 6px; color: #fff; }
+    @media (max-width: 640px) { .rating-wrap { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
   <a class="skip" href="#menu">Skip to menu</a>
@@ -17,6 +42,7 @@
         <a href="#restaurant">Restaurant</a>
         <a href="#offers">Offers</a>
         <a href="#menu">Menu</a>
+        <a href="#ratings">Ratings</a>
       </nav>
       <button class="cart" id="cartBtn" type="button" aria-live="polite">🛒 Cart <span id="cartCount">0</span></button>
     </div>
@@ -146,7 +172,48 @@
       </div>
     </section>
 
-    <!-- ADD-NEW-FEATURE-HERE -->
+    <!-- NEW FEATURE (v2): Customer Rating Summary + Thank-You message -->
+    <section class="section" id="ratings">
+      <div class="container">
+        <h2>Customer Ratings <span class="new-badge">NEW</span></h2>
+        <p class="sub">What 2,300+ food lovers say about Spice Route Kitchen.</p>
+
+        <div class="card rating-wrap">
+          <div class="rating-score">
+            <div class="big">4.6</div>
+            <div class="stars" aria-label="4.6 out of 5 stars">★★★★★</div>
+            <small>Based on 2,314 ratings</small>
+          </div>
+          <ul class="bars">
+            <li><span>5 ★</span><div class="bar"><span style="width:72%"></span></div><span>72%</span></li>
+            <li><span>4 ★</span><div class="bar"><span style="width:18%"></span></div><span>18%</span></li>
+            <li><span>3 ★</span><div class="bar"><span style="width:6%"></span></div><span>6%</span></li>
+            <li><span>2 ★</span><div class="bar"><span style="width:3%"></span></div><span>3%</span></li>
+            <li><span>1 ★</span><div class="bar"><span style="width:1%"></span></div><span>1%</span></li>
+          </ul>
+        </div>
+
+        <div class="reviews">
+          <div class="card review">
+            <span class="who">Priya S.</span> <span class="stars">★★★★★</span>
+            <p>The biryani arrived hot and in 25 minutes. Best in Bengaluru!</p>
+          </div>
+          <div class="card review">
+            <span class="who">Rahul M.</span> <span class="stars">★★★★☆</span>
+            <p>Paneer butter masala was rich and creamy. Great portion size.</p>
+          </div>
+          <div class="card review">
+            <span class="who">Ananya K.</span> <span class="stars">★★★★★</span>
+            <p>Lava cake is a must-try. Loved the Tuesday pizza offer too.</p>
+          </div>
+        </div>
+
+        <div class="thanks" id="thankyou">
+          <h3>🙏 Thank you for ordering with FoodieHub!</h3>
+          <p>Your support keeps our kitchens cooking. Use code <code>THANKYOU10</code> for 10% off your next order.</p>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
