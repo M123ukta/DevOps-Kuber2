@@ -29,7 +29,7 @@ pipeline {
         APP_NAME       = 'lms-portal'
         IMAGE_REPO     = 'muktamotwani/lms-portal'
         VERSION        = "v${BUILD_NUMBER}"
-        APP_URL        = 'http://localhost:30010'
+        APP_URL        = 'http://localhost:30040'
     }
 
     stages {
