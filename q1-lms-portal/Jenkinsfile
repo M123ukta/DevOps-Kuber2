@@ -1,5 +1,5 @@
 // Jenkins credential IDs - these MUST match the IDs in Manage Jenkins > Credentials
-def DOCKER_CRED_ID = 'docker'       // Username with password (Docker Hub user + access token)
+def DOCKER_CRED_ID = 'dockerhub'       // Username with password (Docker Hub user + access token)
 def KUBE_CRED_ID   = 'kubeconfig'   // Secret file (your ~/.kube/config)
 
 pipeline {
